@@ -15,8 +15,7 @@ interface Player {
 export default function Home() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [newPlayerName, setNewPlayerName] = useState("");
-  const [selectedPlayer, setSelectedPlayer] = useState<string | null>(null);
-  const [ranking, setRanking] = useState<string>("");
+  const [scoreInputs, setScoreInputs] = useState<{ [key: string]: string }>({});
   const [winLimit, setWinLimit] = useState<string>("");
   const [winner, setWinner] = useState<Player | null>(null);
   const [showWinLimitForm, setShowWinLimitForm] = useState(true);
@@ -35,20 +34,25 @@ export default function Home() {
   };
 
   // Registrar pontuação
-  const addScore = () => {
-    if (selectedPlayer && ranking) {
-      const rankingNum = parseInt(ranking);
-      if (rankingNum > 0 && rankingNum <= 100) {
-        setPlayers((prevPlayers) =>
-          prevPlayers.map((player) =>
-            player.id === selectedPlayer
-              ? { ...player, score: player.score + rankingNum }
-              : player
-          )
-        );
-        setRanking("");
-      }
-    }
+  // Função para atualizar a pontuação de um jogador
+  const updateScore = (playerId: string, value: string) => {
+    const scoreChange = parseInt(value);
+    if (isNaN(scoreChange) || scoreChange === 0) return;
+
+    setPlayers((prevPlayers) =>
+      prevPlayers.map((player) =>
+        player.id === playerId
+          ? { ...player, score: player.score + scoreChange }
+          : player
+      )
+    );
+    // Limpa o input após a atualização
+    setScoreInputs((prevInputs) => ({ ...prevInputs, [playerId]: "" }));
+  };
+
+  // Handler para mudança no input de pontuação
+  const handleScoreInputChange = (playerId: string, value: string) => {
+    setScoreInputs((prevInputs) => ({ ...prevInputs, [playerId]: value }));
   };
 
   // Verificar se alguém venceu
@@ -66,8 +70,7 @@ export default function Home() {
   const resetGame = () => {
     setPlayers([]);
     setNewPlayerName("");
-    setSelectedPlayer(null);
-    setRanking("");
+    setScoreInputs({});
     setWinLimit("");
     setWinner(null);
     setShowWinLimitForm(true);
@@ -155,49 +158,8 @@ export default function Home() {
                 </CardContent>
               </Card>
 
-              {/* Seção de Registrar Pontuação */}
-              {players.length > 0 && (
-                <Card className="mt-4">
-                  <CardHeader>
-                    <CardTitle className="text-lg">Registrar Pontuação</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div>
-                      <label className="text-sm font-medium text-gray-700 mb-2 block">
-                        Jogador
-                      </label>
-                      <select
-                        value={selectedPlayer || ""}
-                        onChange={(e) => setSelectedPlayer(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      >
-                        <option value="">Selecione um jogador</option>
-                        {players.map((player) => (
-                          <option key={player.id} value={player.id}>
-                            {player.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <Input
-                      type="number"
-                      placeholder="Classificação (1-100)"
-                      value={ranking}
-                      onChange={(e) => setRanking(e.target.value)}
-                      min="1"
-                      max="100"
-                      onKeyPress={(e) => e.key === "Enter" && addScore()}
-                    />
-                    <Button
-                      onClick={addScore}
-                      className="w-full"
-                      disabled={!selectedPlayer || !ranking}
-                    >
-                      Adicionar Pontos
-                    </Button>
-                  </CardContent>
-                </Card>
-              )}
+              
+              
             </div>
 
             {/* Seção de Placar */}
@@ -228,9 +190,32 @@ export default function Home() {
                             </span>
                             <span className="font-medium text-gray-800">{player.name}</span>
                           </div>
-                          <span className="text-xl font-bold text-blue-600">
+                          <span className="text-xl font-bold text-blue-600 mr-4">
                             {player.score}
                           </span>
+                          <div className="flex gap-1">
+                            <Input
+                              type="number"
+                              placeholder="+/-"
+                              className="w-20 h-8 text-sm p-2"
+                              value={scoreInputs[player.id] || ""}
+                              onChange={(e) => handleScoreInputChange(player.id, e.target.value)}
+                              onKeyPress={(e) => {
+                                if (e.key === "Enter") {
+                                  updateScore(player.id, scoreInputs[player.id] || "");
+                                }
+                              }}
+                            />
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-8 px-2"
+                              onClick={() => updateScore(player.id, scoreInputs[player.id] || "")}
+                              disabled={!scoreInputs[player.id] || isNaN(parseInt(scoreInputs[player.id])) || parseInt(scoreInputs[player.id]) === 0}
+                            >
+                              <Plus className="w-4 h-4" />
+                            </Button>
+                          </div>
                         </div>
                       ))}
                     </div>
